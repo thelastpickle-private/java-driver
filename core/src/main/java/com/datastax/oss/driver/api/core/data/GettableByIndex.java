@@ -15,9 +15,6 @@
  */
 package com.datastax.oss.driver.api.core.data;
 
-import com.datastax.oss.driver.api.core.metadata.token.Token;
-import com.datastax.oss.driver.api.core.type.DataType;
-import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.codec.CodecNotFoundException;
 import com.datastax.oss.driver.api.core.type.codec.PrimitiveBooleanCodec;
 import com.datastax.oss.driver.api.core.type.codec.PrimitiveByteCodec;
@@ -28,9 +25,6 @@ import com.datastax.oss.driver.api.core.type.codec.PrimitiveLongCodec;
 import com.datastax.oss.driver.api.core.type.codec.PrimitiveShortCodec;
 import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
-import com.datastax.oss.driver.internal.core.metadata.token.ByteOrderedToken;
-import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
-import com.datastax.oss.driver.internal.core.metadata.token.RandomToken;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetAddress;
@@ -98,9 +92,7 @@ public interface GettableByIndex extends AccessibleByIndex {
    * @throws CodecNotFoundException if no codec can perform the conversion.
    */
   default <T> T get(int i, GenericType<T> targetType) {
-    DataType cqlType = getType(i);
-    TypeCodec<T> codec = codecRegistry().codecFor(cqlType, targetType);
-    return get(i, codec);
+    return get(i, codecFor(i, targetType));
   }
 
   /**
@@ -116,34 +108,7 @@ public interface GettableByIndex extends AccessibleByIndex {
   default <T> T get(int i, Class<T> targetClass) {
     // This is duplicated from the GenericType variant, because we want to give the codec registry
     // a chance to process the unwrapped class directly, if it can do so in a more efficient way.
-    DataType cqlType = getType(i);
-    TypeCodec<T> codec = codecRegistry().codecFor(cqlType, targetClass);
-    return get(i, codec);
-  }
-
-  /**
-   * Returns the {@code i}th value, converting it to the most appropriate Java type.
-   *
-   * <p>The {@link #codecRegistry()} will be used to look up a codec to handle the conversion.
-   *
-   * <p>Use this method to dynamically inspect elements when types aren't known in advance, for
-   * instance if you're writing a generic row logger. If you know the target Java type, it is
-   * generally preferable to use typed variants, such as the ones for built-in types ({@link
-   * #getBoolean(int)}, {@link #getInt(int)}, etc.), or {@link #get(int, Class)} and {@link
-   * #get(int, GenericType)} for custom types.
-   *
-   * <p>The definition of "most appropriate" is unspecified, and left to the appreciation of the
-   * {@link #codecRegistry()} implementation. By default, the driver uses the mapping described in
-   * the other {@code getXxx()} methods (for example {@link #getString(int) String for text, varchar
-   * and ascii}, etc).
-   *
-   * @throws IndexOutOfBoundsException if the index is invalid.
-   * @throws CodecNotFoundException if no codec can perform the conversion.
-   */
-  default Object getObject(int i) {
-    DataType cqlType = getType(i);
-    TypeCodec<?> codec = codecRegistry().codecFor(cqlType);
-    return codec.decode(getBytesUnsafe(i), protocolVersion());
+    return get(i, codecFor(i, targetClass));
   }
 
   /**
@@ -158,8 +123,7 @@ public interface GettableByIndex extends AccessibleByIndex {
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default boolean getBoolean(int i) {
-    DataType cqlType = getType(i);
-    TypeCodec<Boolean> codec = codecRegistry().codecFor(cqlType, Boolean.class);
+    TypeCodec<Boolean> codec = codecFor(i, Boolean.class);
     return (codec instanceof PrimitiveBooleanCodec)
         ? ((PrimitiveBooleanCodec) codec).decodePrimitive(getBytesUnsafe(i), protocolVersion())
         : get(i, codec);
@@ -177,8 +141,7 @@ public interface GettableByIndex extends AccessibleByIndex {
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default byte getByte(int i) {
-    DataType cqlType = getType(i);
-    TypeCodec<Byte> codec = codecRegistry().codecFor(cqlType, Byte.class);
+    TypeCodec<Byte> codec = codecFor(i, Byte.class);
     return (codec instanceof PrimitiveByteCodec)
         ? ((PrimitiveByteCodec) codec).decodePrimitive(getBytesUnsafe(i), protocolVersion())
         : get(i, codec);
@@ -196,8 +159,7 @@ public interface GettableByIndex extends AccessibleByIndex {
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default double getDouble(int i) {
-    DataType cqlType = getType(i);
-    TypeCodec<Double> codec = codecRegistry().codecFor(cqlType, Double.class);
+    TypeCodec<Double> codec = codecFor(i, Double.class);
     return (codec instanceof PrimitiveDoubleCodec)
         ? ((PrimitiveDoubleCodec) codec).decodePrimitive(getBytesUnsafe(i), protocolVersion())
         : get(i, codec);
@@ -215,8 +177,7 @@ public interface GettableByIndex extends AccessibleByIndex {
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default float getFloat(int i) {
-    DataType cqlType = getType(i);
-    TypeCodec<Float> codec = codecRegistry().codecFor(cqlType, Float.class);
+    TypeCodec<Float> codec = codecFor(i, Float.class);
     return (codec instanceof PrimitiveFloatCodec)
         ? ((PrimitiveFloatCodec) codec).decodePrimitive(getBytesUnsafe(i), protocolVersion())
         : get(i, codec);
@@ -234,8 +195,7 @@ public interface GettableByIndex extends AccessibleByIndex {
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default int getInt(int i) {
-    DataType cqlType = getType(i);
-    TypeCodec<Integer> codec = codecRegistry().codecFor(cqlType, Integer.class);
+    TypeCodec<Integer> codec = codecFor(i, Integer.class);
     return (codec instanceof PrimitiveIntCodec)
         ? ((PrimitiveIntCodec) codec).decodePrimitive(getBytesUnsafe(i), protocolVersion())
         : get(i, codec);
@@ -253,8 +213,7 @@ public interface GettableByIndex extends AccessibleByIndex {
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default long getLong(int i) {
-    DataType cqlType = getType(i);
-    TypeCodec<Long> codec = codecRegistry().codecFor(cqlType, Long.class);
+    TypeCodec<Long> codec = codecFor(i, Long.class);
     return (codec instanceof PrimitiveLongCodec)
         ? ((PrimitiveLongCodec) codec).decodePrimitive(getBytesUnsafe(i), protocolVersion())
         : get(i, codec);
@@ -272,8 +231,7 @@ public interface GettableByIndex extends AccessibleByIndex {
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default short getShort(int i) {
-    DataType cqlType = getType(i);
-    TypeCodec<Short> codec = codecRegistry().codecFor(cqlType, Short.class);
+    TypeCodec<Short> codec = codecFor(i, Short.class);
     return (codec instanceof PrimitiveShortCodec)
         ? ((PrimitiveShortCodec) codec).decodePrimitive(getBytesUnsafe(i), protocolVersion())
         : get(i, codec);
@@ -387,36 +345,6 @@ public interface GettableByIndex extends AccessibleByIndex {
    */
   default CqlDuration getCqlDuration(int i) {
     return get(i, CqlDuration.class);
-  }
-
-  /**
-   * Returns the {@code i}th value as a token.
-   *
-   * <p>Note that, for simplicity, this method relies on the CQL type of the column to pick the
-   * correct token implementation. Therefore it must only be called on columns of the type that
-   * matches the partitioner in use for this cluster: {@code bigint} for {@code Murmur3Partitioner},
-   * {@code blob} for {@code ByteOrderedPartitioner}, and {@code varint} for {@code
-   * RandomPartitioner}. Calling it for the wrong type will produce corrupt tokens that are unusable
-   * with this driver instance.
-   *
-   * @throws IndexOutOfBoundsException if the index is invalid.
-   * @throws IllegalArgumentException if the column type can not be converted to a known token type.
-   */
-  default Token getToken(int i) {
-    DataType type = getType(i);
-    // Simply enumerate all known implementations. This goes against the concept of TokenFactory,
-    // but injecting the factory here is too much of a hassle.
-    // The only issue is if someone uses a custom partitioner, but this is highly unlikely, and even
-    // then they can get the value manually as a workaround.
-    if (type.equals(DataTypes.BIGINT)) {
-      return isNull(i) ? null : new Murmur3Token(getLong(i));
-    } else if (type.equals(DataTypes.BLOB)) {
-      return isNull(i) ? null : new ByteOrderedToken(getByteBuffer(i));
-    } else if (type.equals(DataTypes.VARINT)) {
-      return isNull(i) ? null : new RandomToken(getBigInteger(i));
-    } else {
-      throw new IllegalArgumentException("Can't convert CQL type " + type + " into a token");
-    }
   }
 
   /**

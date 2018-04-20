@@ -15,19 +15,16 @@
  */
 package com.datastax.oss.driver.api.core.data;
 
-import com.datastax.oss.driver.api.core.detach.Detachable;
-import com.datastax.oss.driver.api.core.type.UserDefinedType;
-import java.io.Serializable;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
+import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 
-/**
- * Driver-side representation of an instance of a CQL user defined type.
- *
- * <p>It is an ordered set of named, typed fields.
- *
- * <p>A tuple value is attached if and only if its type is attached (see {@link Detachable}).
- */
-public interface UdtValue extends Serializable,
-    SchemaAware, Gettable, Settable<UdtValue> {
+public interface LookupById extends Data {
 
-  UserDefinedType getType();
+  /**
+   * Returns the first index where a given identifier appears (depending on the implementation,
+   * identifiers may appear multiple times).
+   */
+  int firstIndexOf(CqlIdentifier id);
+
 }

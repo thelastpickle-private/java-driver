@@ -16,7 +16,7 @@
 package com.datastax.oss.driver.internal.core.data;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.data.AccessibleByName;
+import com.datastax.oss.driver.api.core.data.SchemaAwareByName;
 import com.datastax.oss.driver.api.core.data.GettableById;
 import com.datastax.oss.driver.api.core.data.GettableByName;
 import com.datastax.oss.driver.internal.core.util.Strings;
@@ -54,7 +54,7 @@ public class IdentifierIndex {
 
   /**
    * Returns the first occurrence of a given name, given the matching rules described in {@link
-   * AccessibleByName}, or -1 if it's not in the list.
+   * SchemaAwareByName}, or -1 if it's not in the list.
    */
   public int firstIndexOf(String name) {
     Integer index =

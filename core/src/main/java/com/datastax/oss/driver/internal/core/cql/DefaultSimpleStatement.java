@@ -16,9 +16,11 @@
 package com.datastax.oss.driver.internal.core.cql;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.ProtocolVersion;
 import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.token.Token;
+import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
 import java.nio.ByteBuffer;
@@ -78,6 +80,48 @@ public class DefaultSimpleStatement implements SimpleStatement {
     this.tracing = tracing;
     this.timestamp = timestamp;
     this.pagingState = pagingState;
+  }
+
+  @Override
+  public ByteBuffer getBytesUnsafe(int i) {
+    // TODO
+    return null;
+  }
+
+  @Override
+  public SimpleStatement setBytesUnsafe(int i, ByteBuffer v) {
+    // TODO
+    return null;
+  }
+
+  @Override
+  public int firstIndexOf(String name) {
+    // TODO
+    return 0;
+  }
+
+  @Override
+  public int firstIndexOf(CqlIdentifier id) {
+    // TODO
+    return 0;
+  }
+
+  @Override
+  public int size() {
+    // TODO
+    return 0;
+  }
+
+  @Override
+  public CodecRegistry codecRegistry() {
+    // TODO
+    return null;
+  }
+
+  @Override
+  public ProtocolVersion protocolVersion() {
+    // TODO
+    return null;
   }
 
   @Override
@@ -415,4 +459,5 @@ public class DefaultSimpleStatement implements SimpleStatement {
         timestamp,
         newPagingState);
   }
+
 }

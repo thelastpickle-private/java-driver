@@ -18,6 +18,8 @@ package com.datastax.oss.driver.api.core.cql;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.DefaultProtocolVersion;
+import com.datastax.oss.driver.api.core.data.Gettable;
+import com.datastax.oss.driver.api.core.data.Settable;
 import com.datastax.oss.driver.api.core.session.Request;
 import com.datastax.oss.driver.internal.core.CqlIdentifiers;
 import com.datastax.oss.driver.internal.core.cql.DefaultSimpleStatement;
@@ -47,7 +49,7 @@ import java.util.Map;
  * <p>If an application reuses the same statement more than once, it is recommended to cache it (for
  * example in a final field).
  */
-public interface SimpleStatement extends BatchableStatement<SimpleStatement> {
+public interface SimpleStatement extends BatchableStatement<SimpleStatement>, Gettable, Settable<SimpleStatement> {
 
   /**
    * Shortcut to create an instance of the default implementation with only a CQL query (see {@link

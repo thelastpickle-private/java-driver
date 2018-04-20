@@ -16,28 +16,43 @@
 package com.datastax.oss.driver.api.core.data;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.token.Token;
 import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.core.type.codec.CodecNotFoundException;
+import com.datastax.oss.driver.api.core.type.codec.PrimitiveBooleanCodec;
+import com.datastax.oss.driver.api.core.type.codec.PrimitiveByteCodec;
+import com.datastax.oss.driver.api.core.type.codec.PrimitiveDoubleCodec;
+import com.datastax.oss.driver.api.core.type.codec.PrimitiveFloatCodec;
+import com.datastax.oss.driver.api.core.type.codec.PrimitiveIntCodec;
+import com.datastax.oss.driver.api.core.type.codec.PrimitiveLongCodec;
+import com.datastax.oss.driver.api.core.type.codec.PrimitiveShortCodec;
+import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
+import com.datastax.oss.driver.api.core.type.reflect.GenericType;
+import com.datastax.oss.driver.internal.core.metadata.token.ByteOrderedToken;
+import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
+import com.datastax.oss.driver.internal.core.metadata.token.RandomToken;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.InetAddress;
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
-/**
- * A data structure where the values are accessible via a CQL identifier.
- *
- * <p>In the driver, these data structures are always accessible by index as well.
- */
-public interface AccessibleById extends AccessibleByIndex {
+/** A data structure that provides methods to retrieve its values via a CQL identifier. */
+public interface AccessibleById extends Data {
 
-  /**
-   * Returns the first index where a given identifier appears (depending on the implementation,
-   * identifiers may appear multiple times).
-   */
-  int firstIndexOf(CqlIdentifier id);
+  default <T> TypeCodec<T> codecFor(CqlIdentifier id, GenericType<T> targetType) {
+    return codecRegistry().codecFor(targetType);
+  }
 
-  /**
-   * Returns the CQL type of the value for the first occurrence of {@code id}.
-   *
-   * <p>If you want to avoid the overhead of building a {@code CqlIdentifier}, use the variant of
-   * this method that takes a string argument.
-   *
-   * @throws IndexOutOfBoundsException if the index is invalid.
-   */
-  DataType getType(CqlIdentifier id);
+  default <T> TypeCodec<T> codecFor(CqlIdentifier id, Class<T> targetType) {
+    return codecRegistry().codecFor(targetType);
+  }
+
 }

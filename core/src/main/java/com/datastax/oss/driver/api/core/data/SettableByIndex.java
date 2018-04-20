@@ -16,7 +16,6 @@
 package com.datastax.oss.driver.api.core.data;
 
 import com.datastax.oss.driver.api.core.metadata.token.Token;
-import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.codec.CodecNotFoundException;
 import com.datastax.oss.driver.api.core.type.codec.PrimitiveBooleanCodec;
 import com.datastax.oss.driver.api.core.type.codec.PrimitiveByteCodec;
@@ -97,9 +96,7 @@ public interface SettableByIndex<T extends SettableByIndex<T>> extends Accessibl
    * @throws CodecNotFoundException if no codec can perform the conversion.
    */
   default <V> T set(int i, V v, GenericType<V> targetType) {
-    DataType cqlType = getType(i);
-    TypeCodec<V> codec = codecRegistry().codecFor(cqlType, targetType);
-    return set(i, v, codec);
+    return set(i, v, codecFor(i, targetType));
   }
 
   /**
@@ -115,9 +112,7 @@ public interface SettableByIndex<T extends SettableByIndex<T>> extends Accessibl
   default <V> T set(int i, V v, Class<V> targetClass) {
     // This is duplicated from the GenericType variant, because we want to give the codec registry
     // a chance to process the unwrapped class directly, if it can do so in a more efficient way.
-    DataType cqlType = getType(i);
-    TypeCodec<V> codec = codecRegistry().codecFor(cqlType, targetClass);
-    return set(i, v, codec);
+    return set(i, v, codecFor(i, targetClass));
   }
 
   /**
@@ -131,8 +126,7 @@ public interface SettableByIndex<T extends SettableByIndex<T>> extends Accessibl
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default T setBoolean(int i, boolean v) {
-    DataType cqlType = getType(i);
-    TypeCodec<Boolean> codec = codecRegistry().codecFor(cqlType, Boolean.class);
+    TypeCodec<Boolean> codec = codecFor(i, Boolean.class);
     return (codec instanceof PrimitiveBooleanCodec)
         ? setBytesUnsafe(i, ((PrimitiveBooleanCodec) codec).encodePrimitive(v, protocolVersion()))
         : set(i, v, codec);
@@ -149,8 +143,7 @@ public interface SettableByIndex<T extends SettableByIndex<T>> extends Accessibl
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default T setByte(int i, byte v) {
-    DataType cqlType = getType(i);
-    TypeCodec<Byte> codec = codecRegistry().codecFor(cqlType, Byte.class);
+    TypeCodec<Byte> codec = codecFor(i, Byte.class);
     return (codec instanceof PrimitiveByteCodec)
         ? setBytesUnsafe(i, ((PrimitiveByteCodec) codec).encodePrimitive(v, protocolVersion()))
         : set(i, v, codec);
@@ -167,8 +160,7 @@ public interface SettableByIndex<T extends SettableByIndex<T>> extends Accessibl
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default T setDouble(int i, double v) {
-    DataType cqlType = getType(i);
-    TypeCodec<Double> codec = codecRegistry().codecFor(cqlType, Double.class);
+    TypeCodec<Double> codec = codecFor(i, Double.class);
     return (codec instanceof PrimitiveDoubleCodec)
         ? setBytesUnsafe(i, ((PrimitiveDoubleCodec) codec).encodePrimitive(v, protocolVersion()))
         : set(i, v, codec);
@@ -185,8 +177,7 @@ public interface SettableByIndex<T extends SettableByIndex<T>> extends Accessibl
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default T setFloat(int i, float v) {
-    DataType cqlType = getType(i);
-    TypeCodec<Float> codec = codecRegistry().codecFor(cqlType, Float.class);
+    TypeCodec<Float> codec = codecFor(i, Float.class);
     return (codec instanceof PrimitiveFloatCodec)
         ? setBytesUnsafe(i, ((PrimitiveFloatCodec) codec).encodePrimitive(v, protocolVersion()))
         : set(i, v, codec);
@@ -203,8 +194,7 @@ public interface SettableByIndex<T extends SettableByIndex<T>> extends Accessibl
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default T setInt(int i, int v) {
-    DataType cqlType = getType(i);
-    TypeCodec<Integer> codec = codecRegistry().codecFor(cqlType, Integer.class);
+    TypeCodec<Integer> codec = codecFor(i, Integer.class);
     return (codec instanceof PrimitiveIntCodec)
         ? setBytesUnsafe(i, ((PrimitiveIntCodec) codec).encodePrimitive(v, protocolVersion()))
         : set(i, v, codec);
@@ -221,8 +211,7 @@ public interface SettableByIndex<T extends SettableByIndex<T>> extends Accessibl
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default T setLong(int i, long v) {
-    DataType cqlType = getType(i);
-    TypeCodec<Long> codec = codecRegistry().codecFor(cqlType, Long.class);
+    TypeCodec<Long> codec = codecFor(i, Long.class);
     return (codec instanceof PrimitiveLongCodec)
         ? setBytesUnsafe(i, ((PrimitiveLongCodec) codec).encodePrimitive(v, protocolVersion()))
         : set(i, v, codec);
@@ -239,8 +228,7 @@ public interface SettableByIndex<T extends SettableByIndex<T>> extends Accessibl
    * @throws IndexOutOfBoundsException if the index is invalid.
    */
   default T setShort(int i, short v) {
-    DataType cqlType = getType(i);
-    TypeCodec<Short> codec = codecRegistry().codecFor(cqlType, Short.class);
+    TypeCodec<Short> codec = codecFor(i, Short.class);
     return (codec instanceof PrimitiveShortCodec)
         ? setBytesUnsafe(i, ((PrimitiveShortCodec) codec).encodePrimitive(v, protocolVersion()))
         : set(i, v, codec);

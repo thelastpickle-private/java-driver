@@ -15,18 +15,29 @@
  */
 package com.datastax.oss.driver.api.core.data;
 
+import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 
-/** A data structure that provides methods to retrieve its values via a name. */
-public interface AccessibleByName extends Data {
+public interface SchemaAwareByName extends AccessibleByName {
 
+  /**
+   * Returns the CQL type of the value for the first occurrence of {@code name}.
+   *
+   * <p>This method deals with case sensitivity in the way explained in the documentation of {@link
+   * GettableByName}.
+   *
+   * @throws IndexOutOfBoundsException if the index is invalid.
+   */
+  DataType getType(String name);
+
+  @Override
   default <T> TypeCodec<T> codecFor(String name, GenericType<T> targetType) {
-    return codecRegistry().codecFor(targetType);
+    return codecRegistry().codecFor(getType(name), targetType);
   }
 
+  @Override
   default <T> TypeCodec<T> codecFor(String name, Class<T> targetType) {
-    return codecRegistry().codecFor(targetType);
+    return codecRegistry().codecFor(getType(name), targetType);
   }
-
 }

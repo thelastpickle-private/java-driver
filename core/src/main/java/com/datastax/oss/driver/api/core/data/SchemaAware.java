@@ -15,19 +15,23 @@
  */
 package com.datastax.oss.driver.api.core.data;
 
-import com.datastax.oss.driver.api.core.detach.Detachable;
-import com.datastax.oss.driver.api.core.type.UserDefinedType;
-import java.io.Serializable;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.type.DataType;
 
 /**
- * Driver-side representation of an instance of a CQL user defined type.
- *
- * <p>It is an ordered set of named, typed fields.
- *
- * <p>A tuple value is attached if and only if its type is attached (see {@link Detachable}).
+ * A data structure where the values are accessible via an integer index, a name, or a CQL
+ * identifier.
  */
-public interface UdtValue extends Serializable,
-    SchemaAware, Gettable, Settable<UdtValue> {
+public interface SchemaAware extends SchemaAwareByIndex, SchemaAwareByName, SchemaAwareById, LookupByName, LookupById {
 
-  UserDefinedType getType();
+  @Override
+  default DataType getType(CqlIdentifier id) {
+    return getType(firstIndexOf(id));
+  }
+
+  @Override
+  default DataType getType(String name) {
+    return getType(firstIndexOf(name));
+  }
+
 }

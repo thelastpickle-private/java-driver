@@ -16,16 +16,14 @@
 package com.datastax.oss.driver.api.core.cql;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.data.AccessibleByName;
-import com.datastax.oss.driver.api.core.data.GettableById;
-import com.datastax.oss.driver.api.core.data.GettableByName;
-import com.datastax.oss.driver.api.core.data.SettableById;
-import com.datastax.oss.driver.api.core.data.SettableByName;
+import com.datastax.oss.driver.api.core.data.Gettable;
+import com.datastax.oss.driver.api.core.data.SchemaAware;
+import com.datastax.oss.driver.api.core.data.SchemaAwareByName;
+import com.datastax.oss.driver.api.core.data.Settable;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
 
 /** A data container with the ability to unset values. */
-public interface Bindable<T extends Bindable<T>>
-    extends GettableById, GettableByName, SettableById<T>, SettableByName<T> {
+public interface Bindable<T extends Bindable<T>> extends SchemaAware, Gettable, Settable<T> {
   /**
    * Whether the {@code i}th value has been set.
    *
@@ -53,7 +51,7 @@ public interface Bindable<T extends Bindable<T>>
    * Whether the value for the first occurrence of {@code name} has been set.
    *
    * <p>This method deals with case sensitivity in the way explained in the documentation of {@link
-   * AccessibleByName}.
+   * SchemaAwareByName}.
    *
    * @throws IndexOutOfBoundsException if the name is invalid.
    */

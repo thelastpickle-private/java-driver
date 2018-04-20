@@ -16,7 +16,7 @@
 package com.datastax.oss.driver.api.core.cql;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.data.AccessibleByName;
+import com.datastax.oss.driver.api.core.data.SchemaAwareByName;
 import com.datastax.oss.driver.api.core.detach.Detachable;
 import java.io.Serializable;
 
@@ -74,7 +74,7 @@ public interface ColumnDefinitions extends Iterable<ColumnDefinition>, Detachabl
    * Whether there is a definition using the given name.
    *
    * <p>Because raw strings are ambiguous with regard to case-sensitivity, the argument will be
-   * interpreted according to the rules described in {@link AccessibleByName}.
+   * interpreted according to the rules described in {@link SchemaAwareByName}.
    */
   boolean contains(String name);
 
@@ -85,7 +85,7 @@ public interface ColumnDefinitions extends Iterable<ColumnDefinition>, Detachabl
    * Returns the index of the first column that uses the given name.
    *
    * <p>Because raw strings are ambiguous with regard to case-sensitivity, the argument will be
-   * interpreted according to the rules described in {@link AccessibleByName}.
+   * interpreted according to the rules described in {@link SchemaAwareByName}.
    *
    * <p>Also, note that if multiple columns use the same name, there is no way to find the index for
    * the next occurrences. One way to avoid this is to use aliases in your CQL queries.

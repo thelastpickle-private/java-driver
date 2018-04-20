@@ -15,18 +15,18 @@
  */
 package com.datastax.oss.driver.api.core.data;
 
-import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
+import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 
-/** A data structure where the values are accessible via an integer index. */
+/** A data structure that provides methods to retrieve its values via an integer index. */
 public interface AccessibleByIndex extends Data {
 
-  /** Returns the number of values. */
-  int size();
+  default <T> TypeCodec<T> codecFor(int i, GenericType<T> targetType) {
+    return codecRegistry().codecFor(targetType);
+  }
 
-  /**
-   * Returns the CQL type of the {@code i}th value.
-   *
-   * @throws IndexOutOfBoundsException if the index is invalid.
-   */
-  DataType getType(int i);
+  default <T> TypeCodec<T> codecFor(int i, Class<T> targetType) {
+    return codecRegistry().codecFor(targetType);
+  }
+
 }

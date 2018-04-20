@@ -26,6 +26,6 @@ import java.io.Serializable;
  *
  * <p>A tuple value is attached if and only if its type is attached (see {@link Detachable}).
  */
-public interface TupleValue extends GettableByIndex, SettableByIndex<TupleValue>, Serializable {
+public interface TupleValue extends SchemaAwareByIndex, GettableByIndex, SettableByIndex<TupleValue>, Serializable {
   TupleType getType();
 }
