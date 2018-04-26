@@ -15,6 +15,8 @@
  */
 package com.datastax.oss.driver.api.core.cql;
 
+import static com.datastax.oss.driver.internal.core.cql.DefaultSimpleStatement.fromNullable;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.internal.core.cql.DefaultSimpleStatement;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
@@ -47,11 +49,14 @@ public class SimpleStatementBuilder
 
     this.query = template.getQuery();
     if (!template.getPositionalValues().isEmpty()) {
-      this.positionalValuesBuilder = ImmutableList.builder().addAll(template.getPositionalValues());
+      this.positionalValuesBuilder =
+          ImmutableList.builder()
+              .addAll(DefaultSimpleStatement.fromNullable(template.getPositionalValues()));
     }
     if (!template.getNamedValues().isEmpty()) {
       this.namedValuesBuilder =
-          ImmutableMap.<CqlIdentifier, Object>builder().putAll(template.getNamedValues());
+          ImmutableMap.<CqlIdentifier, Object>builder()
+              .putAll(DefaultSimpleStatement.fromNullable(template.getNamedValues()));
     }
   }
 
@@ -84,7 +89,7 @@ public class SimpleStatementBuilder
     if (positionalValuesBuilder == null) {
       positionalValuesBuilder = ImmutableList.builder();
     }
-    positionalValuesBuilder.add(value);
+    positionalValuesBuilder.add(fromNullable(value));
     return this;
   }
 
@@ -97,7 +102,7 @@ public class SimpleStatementBuilder
     if (positionalValuesBuilder == null) {
       positionalValuesBuilder = ImmutableList.builder();
     }
-    positionalValuesBuilder.addAll(values);
+    positionalValuesBuilder.addAll(DefaultSimpleStatement.fromNullable(values));
     return this;
   }
 
@@ -121,7 +126,7 @@ public class SimpleStatementBuilder
     if (namedValuesBuilder == null) {
       namedValuesBuilder = ImmutableMap.builder();
     }
-    namedValuesBuilder.put(name, value);
+    namedValuesBuilder.put(name, fromNullable(value));
     return this;
   }
 

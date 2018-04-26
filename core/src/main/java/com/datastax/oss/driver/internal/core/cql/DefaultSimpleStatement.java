@@ -22,8 +22,11 @@ import com.datastax.oss.driver.api.core.metadata.token.Token;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import net.jcip.annotations.Immutable;
 
 @Immutable
@@ -65,8 +68,8 @@ public class DefaultSimpleStatement implements SimpleStatement {
       throw new IllegalArgumentException("Can't have both positional and named values");
     }
     this.query = query;
-    this.positionalValues = ImmutableList.copyOf(positionalValues);
-    this.namedValues = ImmutableMap.copyOf(namedValues);
+    this.positionalValues = ImmutableList.copyOf(fromNullable(positionalValues));
+    this.namedValues = ImmutableMap.copyOf(fromNullable(namedValues));
     this.configProfileName = configProfileName;
     this.configProfile = configProfile;
     this.keyspace = keyspace;
@@ -106,7 +109,7 @@ public class DefaultSimpleStatement implements SimpleStatement {
 
   @Override
   public List<Object> getPositionalValues() {
-    return positionalValues;
+    return toNullable(positionalValues);
   }
 
   @Override
@@ -130,7 +133,7 @@ public class DefaultSimpleStatement implements SimpleStatement {
 
   @Override
   public Map<CqlIdentifier, Object> getNamedValues() {
-    return namedValues;
+    return toNullable(namedValues);
   }
 
   @Override
@@ -414,5 +417,47 @@ public class DefaultSimpleStatement implements SimpleStatement {
         tracing,
         timestamp,
         newPagingState);
+  }
+
+  static final Object NULL_VALUE = new Object();
+
+  public static List<Object> fromNullable(Iterable<Object> positionalValues) {
+    List<Object> l = new ArrayList<>();
+    for (Object value : positionalValues) {
+      l.add(fromNullable(value));
+    }
+    return l;
+  }
+
+  private static List<Object> toNullable(Iterable<Object> positionalValues) {
+    List<Object> l = new ArrayList<>();
+    for (Object value : positionalValues) {
+      l.add(toNullable(value));
+    }
+    return l;
+  }
+
+  public static <T> Map<T, Object> fromNullable(Map<T, Object> namedValues) {
+    Map<T, Object> m = new HashMap<>(namedValues.size());
+    for (Entry<T, Object> entry : namedValues.entrySet()) {
+      m.put(entry.getKey(), fromNullable(entry.getValue()));
+    }
+    return m;
+  }
+
+  private static <T> Map<T, Object> toNullable(Map<T, Object> namedValues) {
+    Map<T, Object> m = new HashMap<>(namedValues.size());
+    for (Entry<T, Object> entry : namedValues.entrySet()) {
+      m.put(entry.getKey(), toNullable(entry.getValue()));
+    }
+    return m;
+  }
+
+  public static Object fromNullable(Object elt) {
+    return elt == null ? NULL_VALUE : elt;
+  }
+
+  private static Object toNullable(Object elt) {
+    return elt == NULL_VALUE ? null : elt;
   }
 }
