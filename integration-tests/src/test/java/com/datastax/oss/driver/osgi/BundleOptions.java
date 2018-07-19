@@ -38,6 +38,7 @@ public class BundleOptions {
             mavenBundle("org.slf4j", "slf4j-api", getVersion("slf4j.version")),
             mavenBundle("org.hdrhistogram", "HdrHistogram", getVersion("hdrhistogram.version")),
             mavenBundle("com.typesafe", "config", getVersion("config.version")),
+            mavenBundle("org.jctools", "jctools-core", getVersion("jctools.version")),
             mavenBundle(
                 "com.datastax.oss", "native-protocol", getVersion("native-protocol.version")),
             logbackBundles(),

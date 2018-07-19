@@ -78,7 +78,7 @@ public abstract class OsgiBaseIT {
   @SuppressWarnings("unchecked")
   public void should_connect_and_query() {
     SessionBuilder<CqlSessionBuilder, CqlSession> builder =
-        SessionUtils.baseBuilder()
+        CqlSession.builder()
             .addContactPoints(ccmRule.getContactPoints())
             // use the driver's ClassLoader instead of the OSGI application thread's.
             .withClassLoader(CqlSession.class.getClassLoader())
