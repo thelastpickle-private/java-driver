@@ -13,6 +13,9 @@
 - [improvement] JAVA-1786: Use Google code formatter.
 - [bug] JAVA-1871: Change LOCAL\_SERIAL.isDCLocal() to return true.
 - [documentation] JAVA-1902: Clarify unavailable & request error in DefaultRetryPolicy javadoc.
+- [bug] JAVA-1211: Fix NPE in cluster close when cluster init fails.
+- [bug] JAVA-1220: Fast Fail on cluster init if previous init failed.
+- [bug] JAVA-1929: Preempt session execute queries if session was closed.
 
 Merged from 3.5.x:
 
