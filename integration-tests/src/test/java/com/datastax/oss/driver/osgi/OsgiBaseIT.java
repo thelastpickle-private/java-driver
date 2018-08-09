@@ -75,7 +75,6 @@ public abstract class OsgiBaseIT {
    * an OSGi container.
    */
   @Test
-  @SuppressWarnings("unchecked")
   public void should_connect_and_query() {
     SessionBuilder<CqlSessionBuilder, CqlSession> builder =
         CqlSession.builder()
