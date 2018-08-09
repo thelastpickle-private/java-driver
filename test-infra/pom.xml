@@ -68,8 +68,6 @@
             <Bundle-SymbolicName>com.datastax.oss.driver.testinfra</Bundle-SymbolicName>
             <!-- allow SessionUtils to instantiate sessions by reflection -->
             <DynamicImport-Package>*</DynamicImport-Package>
-            <!-- TODO: Only needed to use TestConfigLoader in integration-tests, remove this when we have
-                 a programmatic solution in core -->
             <Export-Package>
               com.datastax.oss.driver.*.testinfra.*,
               com.datastax.oss.driver.assertions,
