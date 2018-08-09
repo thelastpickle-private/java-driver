@@ -15,12 +15,18 @@
  */
 package com.datastax.oss.driver.osgi;
 
+import static com.datastax.oss.driver.osgi.BundleOptions.baseOptions;
+import static com.datastax.oss.driver.osgi.BundleOptions.driverCoreBundle;
+import static com.datastax.oss.driver.osgi.BundleOptions.driverQueryBuilderBundle;
+import static org.ops4j.pax.exam.CoreOptions.options;
+
+import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.Option;
 
 public class OsgiIT extends OsgiBaseIT {
 
-  @Override
-  public Option[] additionalOptions() {
-    return new Option[0];
+  @Configuration
+  public Option[] config() {
+    return options(driverCoreBundle(), driverQueryBuilderBundle(), baseOptions());
   }
 }

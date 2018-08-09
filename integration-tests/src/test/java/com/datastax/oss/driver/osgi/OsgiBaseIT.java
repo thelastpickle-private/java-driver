@@ -16,11 +16,7 @@
 package com.datastax.oss.driver.osgi;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilderDsl.selectFrom;
-import static com.datastax.oss.driver.osgi.BundleOptions.baseOptions;
-import static com.datastax.oss.driver.osgi.BundleOptions.driverCoreBundle;
-import static com.datastax.oss.driver.osgi.BundleOptions.driverQueryBuilderBundle;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.ops4j.pax.exam.CoreOptions.options;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -31,13 +27,10 @@ import com.datastax.oss.driver.api.core.session.SessionBuilder;
 import com.datastax.oss.driver.api.testinfra.ccm.CustomCcmRule;
 import com.datastax.oss.driver.api.testinfra.session.SessionUtils;
 import com.datastax.oss.driver.categories.IsolatedTests;
-import com.google.common.collect.ObjectArrays;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-import org.ops4j.pax.exam.Configuration;
-import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
@@ -53,17 +46,6 @@ import org.ops4j.pax.exam.spi.reactors.PerClass;
 public abstract class OsgiBaseIT {
 
   @ClassRule public static CustomCcmRule ccmRule = CustomCcmRule.builder().withNodes(1).build();
-
-  /** @return Additional options that should be used in OSGi environment configuration. */
-  public abstract Option[] additionalOptions();
-
-  @Configuration
-  public Option[] config() {
-    return ObjectArrays.concat(
-        options(driverCoreBundle(), driverQueryBuilderBundle(), baseOptions()),
-        additionalOptions(),
-        Option.class);
-  }
 
   /** @return config loader to be used to create session. */
   public DriverConfigLoader configLoader() {
