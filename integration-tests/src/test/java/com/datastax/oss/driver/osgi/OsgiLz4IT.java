@@ -35,7 +35,7 @@ public class OsgiLz4IT extends OsgiBaseIT {
   }
 
   @Override
-  public DriverConfigLoader configLoader() {
+  protected DriverConfigLoader configLoader() {
     return SessionUtils.configLoaderBuilder()
         .withString(DefaultDriverOption.PROTOCOL_COMPRESSION, "lz4")
         .build();

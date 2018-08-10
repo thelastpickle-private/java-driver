@@ -35,7 +35,7 @@ public class OsgiSnappyIT extends OsgiBaseIT {
   }
 
   @Override
-  public DriverConfigLoader configLoader() {
+  protected DriverConfigLoader configLoader() {
     return SessionUtils.configLoaderBuilder()
         .withString(DefaultDriverOption.PROTOCOL_COMPRESSION, "snappy")
         .build();

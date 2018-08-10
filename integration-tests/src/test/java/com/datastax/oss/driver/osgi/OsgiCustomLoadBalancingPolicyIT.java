@@ -40,7 +40,7 @@ public class OsgiCustomLoadBalancingPolicyIT extends OsgiBaseIT {
   }
 
   @Override
-  public DriverConfigLoader configLoader() {
+  protected DriverConfigLoader configLoader() {
     return SessionUtils.configLoaderBuilder()
         .withClass(
             DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS, SortingLoadBalancingPolicy.class)
