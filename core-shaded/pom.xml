@@ -199,6 +199,7 @@
                   com.datastax.oss.driver.shaded.*
                 </Export-Package>
               </instructions>
+              <rebuildBundle>true</rebuildBundle>
             </configuration>
           </execution>
         </executions>
