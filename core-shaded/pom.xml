@@ -67,6 +67,7 @@
         <artifactId>maven-shade-plugin</artifactId>
         <executions>
           <execution>
+            <id>shade-core-dependencies</id>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
@@ -105,6 +106,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
+            <id>unpack-shaded-classes</id>
             <phase>package</phase>
             <goals>
               <goal>unpack</goal>
@@ -139,6 +141,7 @@
         <extensions>true</extensions>
         <executions>
           <execution>
+            <id>generate-shaded-manifest</id>
             <phase>package</phase>
             <goals>
               <goal>manifest</goal>
