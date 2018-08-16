@@ -19,12 +19,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datastax.oss.driver.api.core.type.codec.TypeCodecs;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import org.junit.Test;
 
 public class TimestampCodecTest extends CodecTestBase<Instant> {
 
   public TimestampCodecTest() {
-    this.codec = TypeCodecs.TIMESTAMP;
+    codec = TypeCodecs.TIMESTAMP;
   }
 
   @Test
@@ -53,9 +57,11 @@ public class TimestampCodecTest extends CodecTestBase<Instant> {
 
   @Test
   public void should_format() {
-    // No need to test various values because the codec delegates directly to the JDK's formatter,
+    // No need to test various values because the codec delegates directly to SimpleDateFormat,
     // which we assume does its job correctly.
-    assertThat(format(Instant.EPOCH)).isEqualTo("'1970-01-01T00:00:00.000+00:00'");
+    assertThat(format(Instant.EPOCH)).isEqualTo("'1970-01-01T00:00:00.000Z'");
+    assertThat(format(Instant.parse("2018-08-16T15:59:34.123Z")))
+        .isEqualTo("'2018-08-16T15:59:34.123Z'");
     assertThat(format(null)).isEqualTo("NULL");
   }
 
@@ -63,9 +69,72 @@ public class TimestampCodecTest extends CodecTestBase<Instant> {
   public void should_parse() {
     // Raw number
     assertThat(parse("'0'")).isEqualTo(Instant.EPOCH);
+    assertThat(parse("'-1'")).isEqualTo(Instant.EPOCH.minusMillis(1));
 
-    // Date format
-    assertThat(parse("'1970-01-01T00:00Z'")).isEqualTo(Instant.EPOCH);
+    // Date formats
+
+    Instant expected;
+
+    // date without time, without time zone
+    expected = LocalDateTime.parse("2018-08-16T00:00").atZone(ZoneId.systemDefault()).toInstant();
+    assertThat(parse("'2018-08-16'")).isEqualTo(expected);
+
+    // date without time, with time zone
+    expected = LocalDateTime.parse("2018-08-16T00:00").atZone(ZoneOffset.ofHours(2)).toInstant();
+    assertThat(parse("'2018-08-16 CEST'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16+02'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16+0200'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16+02:00'")).isEqualTo(expected);
+
+    // date with time, without time zone
+    expected = LocalDateTime.parse("2018-08-16T16:08").atZone(ZoneId.systemDefault()).toInstant();
+    assertThat(parse("'2018-08-16T16:08'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08'")).isEqualTo(expected);
+
+    // date with time + seconds, without time zone
+    expected =
+        LocalDateTime.parse("2018-08-16T16:08:38").atZone(ZoneId.systemDefault()).toInstant();
+    assertThat(parse("'2018-08-16T16:08:38'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08:38'")).isEqualTo(expected);
+
+    // date with time + seconds + milliseconds, without time zone
+    expected =
+        LocalDateTime.parse("2018-08-16T16:08:38.230").atZone(ZoneId.systemDefault()).toInstant();
+    assertThat(parse("'2018-08-16T16:08:38.230'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08:38.230'")).isEqualTo(expected);
+
+    // date with time, with time zone
+    expected = ZonedDateTime.parse("2018-08-16T16:08:00.000+02:00").toInstant();
+    assertThat(parse("'2018-08-16T16:08 CEST'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16T16:08+02'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16T16:08+0200'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16T16:08+02:00'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08 CEST'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08+02'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08+0200'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08+02:00'")).isEqualTo(expected);
+
+    // date with time + seconds, with time zone
+    expected = ZonedDateTime.parse("2018-08-16T16:08:38.000+02:00").toInstant();
+    assertThat(parse("'2018-08-16T16:08:38 CEST'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16T16:08:38+02'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16T16:08:38+0200'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16T16:08:38+02:00'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08:38 CEST'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08:38+02'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08:38+0200'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08:38+02:00'")).isEqualTo(expected);
+
+    // date with time + seconds + milliseconds, with time zone
+    expected = ZonedDateTime.parse("2018-08-16T16:08:38.230+02:00").toInstant();
+    assertThat(parse("'2018-08-16T16:08:38.230 CEST'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16T16:08:38.230+02'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16T16:08:38.230+0200'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16T16:08:38.230+02:00'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08:38.230 CEST'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08:38.230+02'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08:38.230+0200'")).isEqualTo(expected);
+    assertThat(parse("'2018-08-16 16:08:38.230+02:00'")).isEqualTo(expected);
 
     assertThat(parse("NULL")).isNull();
     assertThat(parse("null")).isNull();

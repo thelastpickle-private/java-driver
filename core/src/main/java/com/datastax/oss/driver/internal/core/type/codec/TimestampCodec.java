@@ -26,44 +26,161 @@ import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.internal.core.util.Strings;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import io.netty.util.concurrent.FastThreadLocal;
 import java.nio.ByteBuffer;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoField;
+import java.util.Date;
+import java.util.TimeZone;
 import net.jcip.annotations.ThreadSafe;
 
+/**
+ * A codec that handles Apache Cassandra(R)'s timestamp type and maps it to Java's {@link Instant}.
+ *
+ * <p>Implementation notes:
+ *
+ * <ol>
+ *   <li>Because {@code Instant} uses a precision of nanoseconds, whereas the timestamp type uses a
+ *       precision of milliseconds, truncation will happen for any excess precision information as
+ *       though the amount in nanoseconds was subject to integer division by one million.
+ *   <li>For compatibility reasons, this codec uses the legacy {@link SimpleDateFormat} API
+ *       internally when parsing and formatting, and converts from {@link Instant} to {@link Date}
+ *       and vice versa. Specially when parsing, this may yield different results as compared to
+ *       what the newer Java Time API parsers would have produced for the same input.
+ *   <li>Also, {@code Instant} can store points on the time-line further in the future and further
+ *       in the past than {@code Date}. This codec will throw an exception when attempting to parse
+ *       or format an {@code Instant} falling in this category.
+ * </ol>
+ *
+ * <h3>Accepted date-time formats</h3>
+ *
+ * The following patterns are considered valid CQL timestamp literal formats and are thus all
+ * recognized when parsing:
+ *
+ * <ol>
+ *   <li>{@code yyyy-MM-dd'T'HH:mm}
+ *   <li>{@code yyyy-MM-dd'T'HH:mm:ss}
+ *   <li>{@code yyyy-MM-dd'T'HH:mm:ss.SSS}
+ *   <li>{@code yyyy-MM-dd'T'HH:mmX}
+ *   <li>{@code yyyy-MM-dd'T'HH:mmXX}
+ *   <li>{@code yyyy-MM-dd'T'HH:mmXXX}
+ *   <li>{@code yyyy-MM-dd'T'HH:mm:ssX}
+ *   <li>{@code yyyy-MM-dd'T'HH:mm:ssXX}
+ *   <li>{@code yyyy-MM-dd'T'HH:mm:ssXXX}
+ *   <li>{@code yyyy-MM-dd'T'HH:mm:ss.SSSX}
+ *   <li>{@code yyyy-MM-dd'T'HH:mm:ss.SSSXX}
+ *   <li>{@code yyyy-MM-dd'T'HH:mm:ss.SSSXXX}
+ *   <li>{@code yyyy-MM-dd'T'HH:mm z}
+ *   <li>{@code yyyy-MM-dd'T'HH:mm:ss z}
+ *   <li>{@code yyyy-MM-dd'T'HH:mm:ss.SSS z}
+ *   <li>{@code yyyy-MM-dd HH:mm}
+ *   <li>{@code yyyy-MM-dd HH:mm:ss}
+ *   <li>{@code yyyy-MM-dd HH:mm:ss.SSS}
+ *   <li>{@code yyyy-MM-dd HH:mmX}
+ *   <li>{@code yyyy-MM-dd HH:mmXX}
+ *   <li>{@code yyyy-MM-dd HH:mmXXX}
+ *   <li>{@code yyyy-MM-dd HH:mm:ssX}
+ *   <li>{@code yyyy-MM-dd HH:mm:ssXX}
+ *   <li>{@code yyyy-MM-dd HH:mm:ssXXX}
+ *   <li>{@code yyyy-MM-dd HH:mm:ss.SSSX}
+ *   <li>{@code yyyy-MM-dd HH:mm:ss.SSSXX}
+ *   <li>{@code yyyy-MM-dd HH:mm:ss.SSSXXX}
+ *   <li>{@code yyyy-MM-dd HH:mm z}
+ *   <li>{@code yyyy-MM-dd HH:mm:ss z}
+ *   <li>{@code yyyy-MM-dd HH:mm:ss.SSS z}
+ *   <li>{@code yyyy-MM-dd}
+ *   <li>{@code yyyy-MM-ddX}
+ *   <li>{@code yyyy-MM-ddXX}
+ *   <li>{@code yyyy-MM-ddXXX}
+ *   <li>{@code yyyy-MM-dd z}
+ * </ol>
+ *
+ * When formatting, the pattern used is always {@code yyyy-MM-dd'T'HH:mm:ss.SSSXXX} and the time
+ * zone is always UTC.
+ */
 @ThreadSafe
 public class TimestampCodec implements TypeCodec<Instant> {
 
-  /** A {@link DateTimeFormatter} that parses (most) of the ISO formats accepted in CQL. */
-  private static final DateTimeFormatter PARSER =
-      new java.time.format.DateTimeFormatterBuilder()
-          .parseCaseSensitive()
-          .parseStrict()
-          .append(DateTimeFormatter.ISO_LOCAL_DATE)
-          .optionalStart()
-          .appendLiteral('T')
-          .appendValue(ChronoField.HOUR_OF_DAY, 2)
-          .appendLiteral(':')
-          .appendValue(ChronoField.MINUTE_OF_HOUR, 2)
-          .optionalEnd()
-          .optionalStart()
-          .appendLiteral(':')
-          .appendValue(ChronoField.SECOND_OF_MINUTE, 2)
-          .optionalEnd()
-          .optionalStart()
-          .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
-          .optionalEnd()
-          .optionalStart()
-          .appendZoneId()
-          .optionalEnd()
-          .toFormatter()
-          .withZone(ZoneOffset.UTC);
+  /**
+   * Patterns accepted by Apache Cassandra(R) 3.0 and higher when parsing CQL literals.
+   *
+   * <p>Note that Cassandra's TimestampSerializer declares many more patterns but some of them are
+   * equivalent when parsing.
+   */
+  private static final String[] DATE_STRING_PATTERNS =
+      new String[] {
+        // 1) date-time patterns separated by 'T'
+        // (declared first because none of the others are ISO compliant, but some of these are)
+        // 1.a) without time zone
+        "yyyy-MM-dd'T'HH:mm",
+        "yyyy-MM-dd'T'HH:mm:ss",
+        "yyyy-MM-dd'T'HH:mm:ss.SSS",
+        // 1.b) with ISO-8601 time zone
+        "yyyy-MM-dd'T'HH:mmX",
+        "yyyy-MM-dd'T'HH:mmXX",
+        "yyyy-MM-dd'T'HH:mmXXX",
+        "yyyy-MM-dd'T'HH:mm:ssX",
+        "yyyy-MM-dd'T'HH:mm:ssXX",
+        "yyyy-MM-dd'T'HH:mm:ssXXX",
+        "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+        "yyyy-MM-dd'T'HH:mm:ss.SSSXX",
+        "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+        // 1.c) with generic time zone
+        "yyyy-MM-dd'T'HH:mm z",
+        "yyyy-MM-dd'T'HH:mm:ss z",
+        "yyyy-MM-dd'T'HH:mm:ss.SSS z",
+        // 2) date-time patterns separated by whitespace
+        // 2.a) without time zone
+        "yyyy-MM-dd HH:mm",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd HH:mm:ss.SSS",
+        // 2.b) with ISO-8601 time zone
+        "yyyy-MM-dd HH:mmX",
+        "yyyy-MM-dd HH:mmXX",
+        "yyyy-MM-dd HH:mmXXX",
+        "yyyy-MM-dd HH:mm:ssX",
+        "yyyy-MM-dd HH:mm:ssXX",
+        "yyyy-MM-dd HH:mm:ssXXX",
+        "yyyy-MM-dd HH:mm:ss.SSSX",
+        "yyyy-MM-dd HH:mm:ss.SSSXX",
+        "yyyy-MM-dd HH:mm:ss.SSSXXX",
+        // 2.c) with generic time zone
+        "yyyy-MM-dd HH:mm z",
+        "yyyy-MM-dd HH:mm:ss z",
+        "yyyy-MM-dd HH:mm:ss.SSS z",
+        // 3) date patterns without time
+        // 3.a) without time zone
+        "yyyy-MM-dd",
+        // 3.b) with ISO-8601 time zone
+        "yyyy-MM-ddX",
+        "yyyy-MM-ddXX",
+        "yyyy-MM-ddXXX",
+        // 3.c) with generic time zone
+        "yyyy-MM-dd z"
+      };
 
-  private static final DateTimeFormatter FORMATTER =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSxxx").withZone(ZoneOffset.UTC);
+  private static final FastThreadLocal<SimpleDateFormat> PARSER =
+      new FastThreadLocal<SimpleDateFormat>() {
+        @Override
+        protected SimpleDateFormat initialValue() {
+          SimpleDateFormat parser = new SimpleDateFormat();
+          parser.setLenient(false);
+          return parser;
+        }
+      };
+
+  // Note: the pattern chosen below for formatting is a better option than the default pattern used
+  // by Cassandra, which is not ISO-8601 compliant and also omits milliseconds.
+  private static final FastThreadLocal<SimpleDateFormat> FORMATTER =
+      new FastThreadLocal<SimpleDateFormat>() {
+        @Override
+        protected SimpleDateFormat initialValue() {
+          SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+          parser.setTimeZone(TimeZone.getTimeZone("UTC"));
+          return parser;
+        }
+      };
 
   @NonNull
   @Override
@@ -106,7 +223,7 @@ public class TimestampCodec implements TypeCodec<Instant> {
   @NonNull
   @Override
   public String format(@Nullable Instant value) {
-    return (value == null) ? "NULL" : Strings.quote(FORMATTER.format(value));
+    return (value == null) ? "NULL" : Strings.quote(FORMATTER.get().format(Date.from(value)));
   }
 
   @Nullable
@@ -127,11 +244,17 @@ public class TimestampCodec implements TypeCodec<Instant> {
             String.format("Cannot parse timestamp value from \"%s\"", value));
       }
     }
-    try {
-      return Instant.from(PARSER.parse(value));
-    } catch (DateTimeParseException e) {
-      throw new IllegalArgumentException(
-          String.format("Cannot parse timestamp value from \"%s\"", value));
+    SimpleDateFormat parser = PARSER.get();
+    ParsePosition pos = new ParsePosition(0);
+    for (String pattern : DATE_STRING_PATTERNS) {
+      parser.applyPattern(pattern);
+      pos.setIndex(0);
+      Date date = parser.parse(value, pos);
+      if (date != null && pos.getIndex() == value.length()) {
+        return date.toInstant();
+      }
     }
+    throw new IllegalArgumentException(
+        String.format("Cannot parse timestamp value from \"%s\"", value));
   }
 }

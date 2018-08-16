@@ -4,6 +4,7 @@
 
 ### 4.0.0-beta2 (in progress)
 
+- [improvement] JAVA-1916: Base TimestampCodec.parse on java.util.Date.
 - [bug] JAVA-1938: Make CassandraSchemaQueries classes public
 - [improvement] JAVA-1925: Rename context getters
 - [improvement] JAVA-1544: Check API compatibility with Revapi
